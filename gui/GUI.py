@@ -16,7 +16,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class GUIState:
     def __init__(self):
-        self.apps = []
+        self.apps = {}
+        self.widgets = {}
+        self.connections = {}
         self.maximize_apps = False
 
 
@@ -73,9 +75,19 @@ class GUI:
         imgui.begin("DockSpace", None ,imgui.WindowFlags_.no_title_bar | imgui.WindowFlags_.no_resize | imgui.WindowFlags_.no_move | imgui.WindowFlags_.no_scrollbar)
         imgui.set_window_size("DockSpace", (size.x - 1, size.y))
         imgui.dock_space(imgui.get_id("DockSpace"), size, imgui.DockNodeFlags_.passthru_central_node)
-        for app in self.state.apps:
+        for app in self.state.apps.items():
+            app_id, app = app
             if app is not None:
-                app.update(size)
+                app.update()
+        ids_to_remove = []
+        for connection in self.state.connections.items():
+            connection_id, connection = connection
+            if connection is not None:
+                if not connection.update():
+                    # If the connection is not valid, remove it
+                    ids_to_remove.append(connection_id)
+        for connection_id in ids_to_remove:
+            del self.state.connections[connection_id]
         imgui.end()
         
 
@@ -97,7 +109,7 @@ class GUI:
         # and return the app instance
         try:
             module = importlib.import_module(f"apps.{app_name}")
-            app = module.App()
+            app = module.__dict__[app_name]()
             return app
         except ImportError as e:
             print(f"Error loading app {app_name}: {e}")
@@ -110,11 +122,15 @@ class GUI:
         app = self.load_app(app_name)
         if app is not None:
             app.start()
-            self.state.apps.append(app)
+            self.state.apps[id(app)] = app
             return app
         else:
             print(f"Error starting app {app_name}")
             return None
+        
+    def add_widget(self, widget):
+        # This function will add a widget to the GUI
+        self.state.widgets.append(widget)
 
 if __name__ == "__main__":
     gui = GUI()
