@@ -1,6 +1,7 @@
 # An enum to represent the type of connection
 from enum import Enum
 import gui.GUI as GUI
+import threading
 
 class ConnectionType(Enum):
     FLOAT = 1
@@ -20,6 +21,45 @@ class Connection:
 
         g = GUI.GUI()
         g.state.connections[id(self)] = self
+
+        self.val = None
+        self.lock = threading.Lock()
+
+    def get_value(self):
+        with self.lock:
+            return self.val
+        
+    def set_value(self, value):
+        with self.lock:
+            # check that the value is of the same type as the connection
+            if self.type == ConnectionType.FLOAT:
+                if isinstance(value, float):
+                    self.val = value
+                else:
+                    raise ValueError("Value is not of type float")
+            elif self.type == ConnectionType.INT:
+                if isinstance(value, int):
+                    self.val = value
+                else:
+                    raise ValueError("Value is not of type int")
+            elif self.type == ConnectionType.STRING:
+                if isinstance(value, str):
+                    self.val = value
+                else:
+                    raise ValueError("Value is not of type str")
+            elif self.type == ConnectionType.BOOL:
+                if isinstance(value, bool):
+                    self.val = value
+                else:
+                    raise ValueError("Value is not of type bool")
+            elif self.type == ConnectionType.EVENT:
+                if isinstance(value, int):
+                    self.val = value
+                else:
+                    raise ValueError("Value is not of type int")
+            else:
+                raise ValueError("Invalid value type")
+
 
         
     def update(self):
